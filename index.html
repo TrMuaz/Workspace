@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="color-scheme" content="light dark">
+  <?!= include_('Styles'); ?>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to workspace</a>
+
+  <div class="app-shell">
+    <aside class="sidebar" aria-label="Workspace sidebar">
+      <div class="brand">
+        <svg class="brand-mark" viewBox="0 0 32 32"
+             fill="none" aria-hidden="true">
+          <path d="M5 9.5 16 4l11 5.5V23l-11 5-11-5V9.5Z"
+                stroke="currentColor" stroke-width="1.8"/>
+          <path d="m5 9.5 11 5 11-5M16 14.5V28M10.5 7.2l11 5"
+                stroke="currentColor" stroke-width="1.8"/>
+        </svg>
+        <div>
+          <strong class="workspace-name">My Space</strong>
+          <span class="brand-caption">A personal workspace</span>
+        </div>
+      </div>
+
+      <nav id="desktopNav" class="navigation"
+           aria-label="Main navigation"></nav>
+
+      <div class="sidebar-footer">
+        <span class="connection-dot" aria-hidden="true"></span>
+        <span>Private workspace · Online-first</span>
+      </div>
+    </aside>
+
+    <main id="main" class="main" tabindex="-1">
+      <header class="topbar">
+        <div class="page-heading">
+          <button id="menuButton" class="icon-button mobile-menu"
+                  type="button" aria-label="Open navigation"
+                  aria-haspopup="dialog" data-icon="menu"></button>
+          <div class="heading-copy">
+            <p class="eyebrow">Your collection</p>
+            <h1 id="sectionTitle">All items</h1>
+          </div>
+        </div>
+
+        <div class="top-actions">
+          <label class="search-box">
+            <span class="sr-only">Search items</span>
+            <span data-icon="search" aria-hidden="true"></span>
+            <input id="searchInput" type="search"
+                   placeholder="Search your space…" autocomplete="off">
+          </label>
+
+          <button id="newButton" class="button primary"
+                  type="button" data-net>
+            <span data-icon="plus" aria-hidden="true"></span>
+            <span>New item</span>
+          </button>
+        </div>
+      </header>
+
+      <section class="workspace-content" aria-label="Workspace items">
+        <div class="toolbar">
+          <div class="view-switcher" role="group" aria-label="Item view">
+            <button type="button" data-view="gallery" aria-pressed="true">
+              <span data-icon="grid" aria-hidden="true"></span>
+              <span>Gallery</span>
+            </button>
+            <button type="button" data-view="board" aria-pressed="false">
+              <span data-icon="board" aria-hidden="true"></span>
+              <span>Board</span>
+            </button>
+            <button type="button" data-view="list" aria-pressed="false">
+              <span data-icon="list" aria-hidden="true"></span>
+              <span>List</span>
+            </button>
+          </div>
+
+          <div class="filter-controls">
+            <label>
+              <span class="sr-only">Filter by status</span>
+              <select id="statusFilter">
+                <option value="">All statuses</option>
+                <option>To do</option>
+                <option>In progress</option>
+                <option>Completed</option>
+              </select>
+            </label>
+
+            <label>
+              <span class="sr-only">Sort items</span>
+              <select id="sortSelect">
+                <option value="updated">Recently updated</option>
+                <option value="created">Newest created</option>
+                <option value="title">Title A–Z</option>
+                <option value="due">Due date</option>
+                <option value="position">Manual position</option>
+              </select>
+            </label>
+
+            <button id="refreshButton" class="icon-button"
+                    type="button" aria-label="Refresh from Google Sheets"
+                    title="Refresh from Google Sheets" data-net
+                    data-icon="refresh"></button>
+          </div>
+        </div>
+
+        <div class="collection-meta">
+          <span id="itemCount">Loading collection…</span>
+          <div class="sync-copy">
+            <span id="syncStatus" role="status" aria-live="polite">
+              Connecting to Sheets…
+            </span>
+            <span id="lastRefreshed"></span>
+          </div>
+        </div>
+
+        <div id="globalError" class="message error-message"
+             role="alert" hidden>
+          <p id="globalErrorText"></p>
+          <button id="retryButton" class="button secondary"
+                  type="button">Retry / Refresh</button>
+        </div>
+
+        <div id="viewRegion" class="view-region" aria-busy="true">
+          <div id="galleryView" class="gallery"></div>
+          <div id="boardView" class="board" hidden></div>
+          <div id="listView" class="item-list" hidden></div>
+          <div id="emptyState" class="empty-state" hidden></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="navigationDialog" class="navigation-dialog"
+          aria-labelledby="navigationTitle">
+    <header class="dialog-header">
+      <h2 id="navigationTitle" class="workspace-name">My Space</h2>
+      <button id="closeNavigation" class="icon-button" type="button"
+              aria-label="Close navigation" data-icon="close"></button>
+    </header>
+    <nav id="mobileNav" class="navigation"
+         aria-label="Mobile navigation"></nav>
+  </dialog>
+
+  <dialog id="editorDialog" class="drawer"
+          aria-labelledby="editorHeading">
+    <form id="editorForm" class="drawer-layout" novalidate>
+      <header class="dialog-header">
+        <div>
+          <p class="eyebrow">Your collection</p>
+          <h2 id="editorHeading">New item</h2>
+        </div>
+        <button id="closeEditor" class="icon-button" type="button"
+                aria-label="Close item editor" data-net
+                data-icon="close"></button>
+      </header>
+
+      <div class="drawer-body">
+        <div id="editorError" class="message error-message"
+             role="alert" hidden>
+          <p id="editorErrorText"></p>
+          <button id="editorLatest" class="button secondary"
+                  type="button" data-net hidden>Load latest version</button>
+        </div>
+
+        <fieldset id="editorFields">
+          <div class="field">
+            <label for="eTitle">Title <span aria-hidden="true">*</span></label>
+            <input id="eTitle" type="text" maxlength="200"
+                   placeholder="Give this idea a name"
+                   aria-describedby="error-title" required>
+            <p id="error-title" class="field-error"></p>
+          </div>
+
+          <div class="field">
+            <label for="eDescription">Description</label>
+            <textarea id="eDescription" rows="2" maxlength="500"
+                      placeholder="A short overview"
+                      aria-describedby="error-description"></textarea>
+            <p id="error-description" class="field-error"></p>
+          </div>
+
+          <div class="field">
+            <label for="eNotes">Notes</label>
+            <textarea id="eNotes" class="notes-input" rows="10"
+                      maxlength="20000"
+                      placeholder="Space to think. Plain text, with room for detail."
+                      aria-describedby="notesHelp error-notes"></textarea>
+            <p id="notesHelp" class="field-help">
+              Plain text · Line breaks are preserved · Up to 20,000 characters
+            </p>
+            <p id="error-notes" class="field-error"></p>
+          </div>
+
+          <div class="form-grid">
+            <div class="field">
+              <label for="eCategory">Category</label>
+              <select id="eCategory"
+                      aria-describedby="error-category"></select>
+              <p id="error-category" class="field-error"></p>
+            </div>
+
+            <div class="field">
+              <label for="eStatus">Status</label>
+              <select id="eStatus" aria-describedby="error-status">
+                <option>To do</option>
+                <option>In progress</option>
+                <option>Completed</option>
+              </select>
+              <p id="error-status" class="field-error"></p>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="eTags">Tags</label>
+            <input id="eTags" type="text"
+                   placeholder="lesson, assessment, ideas"
+                   aria-describedby="tagsHelp error-tags">
+            <p id="tagsHelp" class="field-help">
+              Separate with commas. Up to 20 tags, 40 characters each.
+            </p>
+            <p id="error-tags" class="field-error"></p>
+          </div>
+
+          <div class="form-grid">
+            <div class="field">
+              <label for="eDue">Due date</label>
+              <input id="eDue" type="date"
+                     aria-describedby="error-due_date">
+              <p id="error-due_date" class="field-error"></p>
+            </div>
+
+            <div class="field favourite-field">
+              <label class="checkbox-label" for="eFavourite">
+                <input id="eFavourite" type="checkbox">
+                <span>Add to favourites</span>
+              </label>
+            </div>
+          </div>
+
+          <details class="editor-details">
+            <summary>Cover and resource link</summary>
+
+            <div class="field">
+              <label for="eCoverType">Cover type</label>
+              <select id="eCoverType"
+                      aria-describedby="error-cover_type">
+                <option value="gradient">Gradient</option>
+                <option value="image">Image URL</option>
+              </select>
+              <p id="error-cover_type" class="field-error"></p>
+            </div>
+
+            <div id="gradientField" class="field">
+              <label for="eGradient">Gradient preset</label>
+              <select id="eGradient">
+                <option value="indigo">Quiet indigo</option>
+                <option value="sage">Sage study</option>
+                <option value="sand">Warm paper</option>
+                <option value="rose">Dusty rose</option>
+                <option value="slate">Soft slate</option>
+                <option value="ocean">Still water</option>
+              </select>
+            </div>
+
+            <div id="imageField" class="field" hidden>
+              <label for="eImage">HTTPS image URL</label>
+              <input id="eImage" type="url"
+                     placeholder="https://…"
+                     aria-describedby="imageHelp">
+              <p id="imageHelp" class="field-help">
+                The image host receives requests when covers load.
+                Use a gradient to avoid external image requests.
+              </p>
+            </div>
+
+            <p id="error-cover_value" class="field-error"></p>
+
+            <div class="field">
+              <label for="eResource">Resource URL</label>
+              <input id="eResource" type="url"
+                     placeholder="https://…"
+                     aria-describedby="error-resource_url">
+              <p id="error-resource_url" class="field-error"></p>
+              <a id="resourcePreview" class="text-link"
+                 target="_blank" rel="noopener noreferrer" hidden>
+                Open resource in a new tab
+              </a>
+            </div>
+          </details>
+
+          <p id="editorMetadata" class="field-help"></p>
+        </fieldset>
+      </div>
+
+      <footer class="dialog-footer">
+        <button id="archiveButton" class="button quiet"
+                type="button" data-net hidden>Archive</button>
+        <span class="footer-spacer"></span>
+        <button id="cancelEditor" class="button secondary"
+                type="button" data-net>Cancel</button>
+        <button id="saveEditor" class="button primary"
+                type="submit" data-net>Save item</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <dialog id="settingsDialog" class="drawer settings-drawer"
+          aria-labelledby="settingsHeading">
+    <form id="settingsForm" class="drawer-layout" novalidate>
+      <header class="dialog-header">
+        <div>
+          <p class="eyebrow">Make room for your work</p>
+          <h2 id="settingsHeading">Settings</h2>
+        </div>
+        <button id="closeSettings" class="icon-button" type="button"
+                aria-label="Close settings" data-net
+                data-icon="close"></button>
+      </header>
+
+      <div class="drawer-body">
+        <div id="settingsError" class="message error-message"
+             role="alert" hidden>
+          <p id="settingsErrorText"></p>
+          <button id="settingsLatest" class="button secondary"
+                  type="button" data-net hidden>Load latest settings</button>
+        </div>
+
+        <fieldset id="settingsFields">
+          <div class="field">
+            <label for="workspaceName">Workspace name</label>
+            <input id="workspaceName" type="text" maxlength="80"
+                   aria-describedby="settingsNameError">
+            <p id="settingsNameError" class="field-error"></p>
+          </div>
+
+          <div class="form-grid">
+            <div class="field">
+              <label for="themeSelect">Theme</label>
+              <select id="themeSelect">
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+                <option value="system">System</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="defaultView">Default view</label>
+              <select id="defaultView">
+                <option value="gallery">Gallery</option>
+                <option value="board">Board</option>
+                <option value="list">List</option>
+              </select>
+            </div>
+          </div>
+
+          <section class="settings-section" aria-labelledby="categoriesHeading">
+            <h3 id="categoriesHeading">Categories</h3>
+            <p class="field-help">
+              Rename here to update affected items. A category can only be
+              removed when no active or archived items use it.
+            </p>
+
+            <div id="categoryRows" class="category-rows"></div>
+
+            <div class="add-category">
+              <label class="sr-only" for="newCategory">New category name</label>
+              <input id="newCategory" type="text" maxlength="60"
+                     placeholder="New category name">
+              <button id="addCategory" class="button secondary"
+                      type="button">Add</button>
+            </div>
+
+            <p id="categoriesError" class="field-error" role="status"></p>
+          </section>
+
+          <section class="settings-section" aria-labelledby="backupHeading">
+            <h3 id="backupHeading">Your backup</h3>
+            <p class="field-help">
+              Download the latest saved items and settings as JSON.
+              Unsaved changes are not included. Import is not available.
+            </p>
+            <button id="exportButton" class="button secondary"
+                    type="button" data-net>
+              <span data-icon="download" aria-hidden="true"></span>
+              Export backup
+            </button>
+          </section>
+        </fieldset>
+      </div>
+
+      <footer class="dialog-footer">
+        <span class="footer-spacer"></span>
+        <button id="cancelSettings" class="button secondary"
+                type="button" data-net>Cancel</button>
+        <button id="saveSettings" class="button primary"
+                type="submit" data-net>Save settings</button>
+      </footer>
+    </form>
+  </dialog>
+
+  <dialog id="confirmDialog" class="confirm-dialog"
+          aria-labelledby="confirmTitle"
+          aria-describedby="confirmMessage">
+    <h2 id="confirmTitle">Please confirm</h2>
+    <p id="confirmMessage"></p>
+    <div class="confirm-actions">
+      <button id="confirmNo" class="button secondary"
+              type="button">Keep editing</button>
+      <button id="confirmYes" class="button primary"
+              type="button">Continue</button>
+    </div>
+  </dialog>
+
+  <div id="announcement" class="sr-only" role="status"
+       aria-live="polite" aria-atomic="true"></div>
+
+  <noscript>
+    <p class="noscript-message">
+      Enable JavaScript to use this workspace.
+    </p>
+  </noscript>
+
+  <?!= include_('Scripts'); ?>
+</body>
+</html>
